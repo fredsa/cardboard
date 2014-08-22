@@ -471,9 +471,9 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         float pitch = (float)Math.atan2(objPositionVec[1], -objPositionVec[2]);
         float yaw = (float)Math.atan2(objPositionVec[0], -objPositionVec[2]);
 
-        Log.i(TAG, "Object position: X: " + objPositionVec[0]
+        Log.v(TAG, "Object position: X: " + objPositionVec[0]
                 + "  Y: " + objPositionVec[1] + " Z: " + objPositionVec[2]);
-        Log.i(TAG, "Object Pitch: " + pitch +"  Yaw: " + yaw);
+        Log.v(TAG, "Object Pitch: " + pitch +"  Yaw: " + yaw);
 
         return (Math.abs(pitch) < PITCH_LIMIT) && (Math.abs(yaw) < YAW_LIMIT);
     }
