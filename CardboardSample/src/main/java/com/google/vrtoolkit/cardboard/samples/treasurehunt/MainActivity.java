@@ -47,6 +47,8 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
     private static final String TAG = "MainActivity";
 
+    private static final int CUBE_COUNT = 3;
+
     private static final float CAMERA_Z = 0.01f;
     private static final float TIME_DELTA = 0.3f;
 
@@ -80,7 +82,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private int mModelParam;
     private int mIsFloorParam;
 
-    private float[] mModelCube;
+    private float[][] mModelCubes;
     private float[] mCamera;
     private float[] mView;
     private float[] mHeadView;
@@ -153,7 +155,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         cardboardView.setRenderer(this);
         setCardboardView(cardboardView);
 
-        mModelCube = new float[16];
+        mModelCubes = new float[CUBE_COUNT][16] ;
         mCamera = new float[16];
         mView = new float[16];
         mModelViewProjection = new float[16];
@@ -240,9 +242,11 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 
-        // Object first appears directly in front of user
-        Matrix.setIdentityM(mModelCube, 0);
-        Matrix.translateM(mModelCube, 0, 0, 0, -mObjectDistance);
+        for (int cube = 0; cube < mModelCubes.length; cube++) {
+            // Object first appears directly in front of user
+            Matrix.setIdentityM(mModelCubes[cube], 0);
+            Matrix.translateM(mModelCubes[cube], 0, 3f * cube, 0, -mObjectDistance);
+        }
 
         Matrix.setIdentityM(mModelFloor, 0);
         Matrix.translateM(mModelFloor, 0, 0, -mFloorDepth, 0); // Floor appears below user
@@ -286,8 +290,10 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         mModelParam = GLES20.glGetUniformLocation(mGlProgram, "u_Model");
         mIsFloorParam = GLES20.glGetUniformLocation(mGlProgram, "u_IsFloor");
 
-        // Build the Model part of the ModelView matrix.
-        Matrix.rotateM(mModelCube, 0, TIME_DELTA, 0.5f, 0.5f, 1.0f);
+        for (int cube = 0; cube < mModelCubes.length; cube++) {
+            // Build the Model part of the ModelView matrix.
+            Matrix.rotateM(mModelCubes[cube], 0, TIME_DELTA, 0.5f, 0.5f, 1.0f);
+        }
 
         // Build the camera matrix and apply it to the ModelView.
         Matrix.setLookAtM(mCamera, 0, 0.0f, 0.0f, CAMERA_Z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
@@ -323,11 +329,13 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         GLES20.glUniform3f(mLightPosParam, mLightPosInEyeSpace[0], mLightPosInEyeSpace[1],
                 mLightPosInEyeSpace[2]);
 
-        // Build the ModelView and ModelViewProjection matrices
-        // for calculating cube position and light.
-        Matrix.multiplyMM(mModelView, 0, mView, 0, mModelCube, 0);
-        Matrix.multiplyMM(mModelViewProjection, 0, transform.getPerspective(), 0, mModelView, 0);
-        drawCube();
+        for (int cube = 0; cube < mModelCubes.length; cube++) {
+            // Build the ModelView and ModelViewProjection matrices
+            // for calculating cube position and light.
+            Matrix.multiplyMM(mModelView, 0, mView, 0, mModelCubes[cube], 0);
+            Matrix.multiplyMM(mModelViewProjection, 0, transform.getPerspective(), 0, mModelView, 0);
+            drawCube(cube);
+        }
 
         // Set mModelView for the floor, so we draw floor in the correct location
         Matrix.multiplyMM(mModelView, 0, mView, 0, mModelFloor, 0);
@@ -343,13 +351,14 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     /**
      * Draw the cube. We've set all of our transformation matrices. Now we simply pass them into
      * the shader.
+     * @param cube which Cube to draw
      */
-    public void drawCube() {
+    public void drawCube(int cube) {
         // This is not the floor!
         GLES20.glUniform1f(mIsFloorParam, 0f);
 
         // Set the Model in the shader, used to calculate lighting
-        GLES20.glUniformMatrix4fv(mModelParam, 1, false, mModelCube, 0);
+        GLES20.glUniformMatrix4fv(mModelParam, 1, false, mModelCubes[cube], 0);
 
         // Set the ModelView in the shader, used to calculate lighting
         GLES20.glUniformMatrix4fv(mModelViewParam, 1, false, mModelView, 0);
@@ -367,7 +376,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
 
 
-        if (isLookingAtObject()) {
+        if (isLookingAtObject(cube)) {
             GLES20.glVertexAttribPointer(mColorParam, 4, GLES20.GL_FLOAT, false,
                     0, mCubeFoundColors);
         } else {
@@ -418,14 +427,16 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
      * looking at the object. Otherwise, remind the user what to do.
      */
     private void onUserSees() {
-        if (isLookingAtObject()) {
-            mScore++;
-            mOverlayView.show3DToast("Found it! Look around for another one.\nScore = " + mScore);
-            hideObject();
-        } else {
-            mOverlayView.show3DToast("Look around to find the object!");
+        for (int cube = 0; cube < mModelCubes.length; cube++) {
+            if (isLookingAtObject(cube)) {
+                mScore++;
+                mOverlayView.show3DToast("Found it! Look around for another one.\nScore = " + mScore);
+                hideObject(cube);
+                mVibrator.vibrate(20);
+                return;
+            }
         }
-        // Always give user feedback
+        mOverlayView.show3DToast("Look around to find the object!");
         mVibrator.vibrate(50);
     }
 
@@ -433,39 +444,44 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
      * Find a new random position for the object.
      * We'll rotate it around the Y-axis so it's out of sight, and then up or down by a little bit.
      */
-    private void hideObject() {
+    private void hideObject(int cube) {
         float[] rotationMatrix = new float[16];
         float[] posVec = new float[4];
 
         // First rotate in XZ plane, between 90 and 270 deg away, and scale so that we vary
         // the object's distance from the user.
-        float angleXZ = (float) Math.random() * 180 + 90;
+
+//        float angleXZ = (float) Math.random() * 180 + 90;
+        float angleXZ = (float) Math.random() * 10 - 5;
+        angleXZ += Math.signum(angleXZ) * 5;
+        Log.i(TAG, "angleXZ " + angleXZ);
+
         Matrix.setRotateM(rotationMatrix, 0, angleXZ, 0f, 1f, 0f);
         float oldObjectDistance = mObjectDistance;
         mObjectDistance = (float) Math.random() * 15 + 5;
         float objectScalingFactor = mObjectDistance / oldObjectDistance;
         Matrix.scaleM(rotationMatrix, 0, objectScalingFactor, objectScalingFactor, objectScalingFactor);
-        Matrix.multiplyMV(posVec, 0, rotationMatrix, 0, mModelCube, 12);
+        Matrix.multiplyMV(posVec, 0, rotationMatrix, 0, mModelCubes[cube], 12);
 
         // Now get the up or down angle, between -20 and 20 degrees
         float angleY = (float) Math.random() * 80 - 40; // angle in Y plane, between -40 and 40
         angleY = (float) Math.toRadians(angleY);
         float newY = (float)Math.tan(angleY) * mObjectDistance;
 
-        Matrix.setIdentityM(mModelCube, 0);
-        Matrix.translateM(mModelCube, 0, posVec[0], newY, posVec[2]);
+        Matrix.setIdentityM(mModelCubes[cube], 0);
+        Matrix.translateM(mModelCubes[cube], 0, posVec[0], newY, posVec[2]);
     }
 
     /**
      * Check if user is looking at object by calculating where the object is in eye-space.
      * @return
      */
-    private boolean isLookingAtObject() {
+    private boolean isLookingAtObject(int cube) {
         float[] initVec = {0, 0, 0, 1.0f};
         float[] objPositionVec = new float[4];
 
         // Convert object space to camera space. Use the headView from onNewFrame.
-        Matrix.multiplyMM(mModelView, 0, mHeadView, 0, mModelCube, 0);
+        Matrix.multiplyMM(mModelView, 0, mHeadView, 0, mModelCubes[cube], 0);
         Matrix.multiplyMV(objPositionVec, 0, mModelView, 0, initVec, 0);
 
         float pitch = (float)Math.atan2(objPositionVec[1], -objPositionVec[2]);
