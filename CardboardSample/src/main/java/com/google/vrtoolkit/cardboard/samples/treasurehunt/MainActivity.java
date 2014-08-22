@@ -22,9 +22,14 @@ import android.opengl.Matrix;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.util.Log;
-import com.google.vrtoolkit.cardboard.*;
+import android.view.MotionEvent;
 
-import javax.microedition.khronos.egl.EGLConfig;
+import com.google.vrtoolkit.cardboard.CardboardActivity;
+import com.google.vrtoolkit.cardboard.CardboardView;
+import com.google.vrtoolkit.cardboard.EyeTransform;
+import com.google.vrtoolkit.cardboard.HeadTransform;
+import com.google.vrtoolkit.cardboard.Viewport;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,6 +37,8 @@ import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+
+import javax.microedition.khronos.egl.EGLConfig;
 
 /**
  * A Cardboard sample application.
@@ -393,14 +400,24 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         checkGLError("drawing floor");
     }
 
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        Log.d(TAG, "onTouchEvent");
+        onUserSees();
+        return super.onTouchEvent(event);
+    }
+
+    @Override
+    public void onCardboardTrigger() {
+        Log.d(TAG, "onCardboardTrigger");
+        onUserSees();
+    }
+
     /**
      * Increment the score, hide the object, and give feedback if the user pulls the magnet while
      * looking at the object. Otherwise, remind the user what to do.
      */
-    @Override
-    public void onCardboardTrigger() {
-        Log.i(TAG, "onCardboardTrigger");
-
+    private void onUserSees() {
         if (isLookingAtObject()) {
             mScore++;
             mOverlayView.show3DToast("Found it! Look around for another one.\nScore = " + mScore);
