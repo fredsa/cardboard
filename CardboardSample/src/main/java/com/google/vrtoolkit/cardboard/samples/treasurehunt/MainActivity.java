@@ -47,16 +47,16 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
     private static final String TAG = "MainActivity";
 
-    private static final int CUBE_COUNT = 3;
+    private static final int CUBE_COUNT = 30;
 
     private static final float CAMERA_Z = 0.01f;
-    private static final float TIME_DELTA = 0.3f;
+    private static final float TIME_DELTA = .3f;
 
     private static final float YAW_LIMIT = 0.12f;
     private static final float PITCH_LIMIT = 0.12f;
 
     // We keep the light always position just above the user.
-    private final float[] mLightPosInWorldSpace = new float[] {0.0f, 2.0f, 0.0f, 1.0f};
+    private final float[] mLightPosInWorldSpace = new float[]{0.0f, 2.0f, 0.0f, 1.0f};
     private final float[] mLightPosInEyeSpace = new float[4];
 
     private static final int COORDS_PER_VERTEX = 3;
@@ -101,7 +101,8 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
     /**
      * Converts a raw text file, saved as a resource, into an OpenGL ES shader
-     * @param type The type of shader we will be creating.
+     *
+     * @param type  The type of shader we will be creating.
      * @param resId The resource ID of the raw text file about to be turned into a shader.
      * @return
      */
@@ -131,6 +132,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
     /**
      * Checks if we've had an error inside of OpenGL ES, and if so what that error is.
+     *
      * @param func
      */
     private static void checkGLError(String func) {
@@ -144,6 +146,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     /**
      * Sets the view to our CardboardView and initializes the transformation matrices we will use
      * to render our scene.
+     *
      * @param savedInstanceState
      */
     @Override
@@ -155,7 +158,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         cardboardView.setRenderer(this);
         setCardboardView(cardboardView);
 
-        mModelCubes = new float[CUBE_COUNT][16] ;
+        mModelCubes = new float[CUBE_COUNT][16];
         mCamera = new float[16];
         mView = new float[16];
         mModelViewProjection = new float[16];
@@ -182,6 +185,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     /**
      * Creates the buffers we use to store information about the 3D world. OpenGL doesn't use Java
      * arrays, but rather needs data in a format it can understand. Hence we use ByteBuffers.
+     *
      * @param config The EGL configuration used when creating the surface.
      */
     @Override
@@ -256,6 +260,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
     /**
      * Converts a raw text file into a string.
+     *
      * @param resId The resource ID of the raw text file about to be turned into a shader.
      * @return
      */
@@ -278,6 +283,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
     /**
      * Prepares OpenGL ES before we draw a frame.
+     *
      * @param headTransform The head transformation in the new frame.
      */
     @Override
@@ -292,7 +298,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
         for (int cube = 0; cube < mModelCubes.length; cube++) {
             // Build the Model part of the ModelView matrix.
-            Matrix.rotateM(mModelCubes[cube], 0, TIME_DELTA, 0.5f, 0.5f, 1.0f);
+            Matrix.rotateM(mModelCubes[cube], 0, TIME_DELTA * cube, 0.5f, 0.5f, 1.0f);
         }
 
         // Build the camera matrix and apply it to the ModelView.
@@ -306,6 +312,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     /**
      * Draws a frame for an eye. The transformation for that eye (from the camera) is passed in as
      * a parameter.
+     *
      * @param transform The transformations to apply to render this eye.
      */
     @Override
@@ -340,7 +347,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         // Set mModelView for the floor, so we draw floor in the correct location
         Matrix.multiplyMM(mModelView, 0, mView, 0, mModelFloor, 0);
         Matrix.multiplyMM(mModelViewProjection, 0, transform.getPerspective(), 0,
-            mModelView, 0);
+                mModelView, 0);
         drawFloor(transform.getPerspective());
     }
 
@@ -351,6 +358,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     /**
      * Draw the cube. We've set all of our transformation matrices. Now we simply pass them into
      * the shader.
+     *
      * @param cube which Cube to draw
      */
     public void drawCube(int cube) {
@@ -373,7 +381,6 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         // Set the normal positions of the cube, again for shading
         GLES20.glVertexAttribPointer(mNormalParam, 3, GLES20.GL_FLOAT,
                 false, 0, mCubeNormals);
-
 
 
         if (isLookingAtObject(cube)) {
@@ -430,14 +437,10 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         for (int cube = 0; cube < mModelCubes.length; cube++) {
             if (isLookingAtObject(cube)) {
                 mScore++;
-                mOverlayView.show3DToast("Found it! Look around for another one.\nScore = " + mScore);
+                mOverlayView.show3DToast("Score = " + mScore);
                 hideObject(cube);
-                mVibrator.vibrate(20);
-                return;
             }
         }
-        mOverlayView.show3DToast("Look around to find the object!");
-        mVibrator.vibrate(50);
     }
 
     /**
@@ -466,7 +469,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         // Now get the up or down angle, between -20 and 20 degrees
         float angleY = (float) Math.random() * 80 - 40; // angle in Y plane, between -40 and 40
         angleY = (float) Math.toRadians(angleY);
-        float newY = (float)Math.tan(angleY) * mObjectDistance;
+        float newY = (float) Math.tan(angleY) * mObjectDistance;
 
         Matrix.setIdentityM(mModelCubes[cube], 0);
         Matrix.translateM(mModelCubes[cube], 0, posVec[0], newY, posVec[2]);
@@ -474,6 +477,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
     /**
      * Check if user is looking at object by calculating where the object is in eye-space.
+     *
      * @return
      */
     private boolean isLookingAtObject(int cube) {
@@ -484,12 +488,12 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         Matrix.multiplyMM(mModelView, 0, mHeadView, 0, mModelCubes[cube], 0);
         Matrix.multiplyMV(objPositionVec, 0, mModelView, 0, initVec, 0);
 
-        float pitch = (float)Math.atan2(objPositionVec[1], -objPositionVec[2]);
-        float yaw = (float)Math.atan2(objPositionVec[0], -objPositionVec[2]);
+        float pitch = (float) Math.atan2(objPositionVec[1], -objPositionVec[2]);
+        float yaw = (float) Math.atan2(objPositionVec[0], -objPositionVec[2]);
 
         Log.v(TAG, "Object position: X: " + objPositionVec[0]
                 + "  Y: " + objPositionVec[1] + " Z: " + objPositionVec[2]);
-        Log.v(TAG, "Object Pitch: " + pitch +"  Yaw: " + yaw);
+        Log.v(TAG, "Object Pitch: " + pitch + "  Yaw: " + yaw);
 
         return (Math.abs(pitch) < PITCH_LIMIT) && (Math.abs(yaw) < YAW_LIMIT);
     }
