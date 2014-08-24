@@ -62,8 +62,6 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
     private static final int COORDS_PER_VERTEX = 3;
 
-    private final WorldLayoutData DATA = new WorldLayoutData();
-
     private FloatBuffer mFloorVertices;
     private FloatBuffer mFloorColors;
     private FloatBuffer mFloorNormals;
@@ -194,6 +192,8 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     public void onSurfaceCreated(EGLConfig config) {
         Log.i(TAG, "onSurfaceCreated");
         GLES20.glClearColor(0.1f, 0.1f, 0.1f, 0.5f); // Dark background so text shows up well
+
+        final WorldLayoutData DATA = new WorldLayoutData();
 
         ByteBuffer bbVertices = ByteBuffer.allocateDirect(DATA.CUBE_COORDS.length * BYTES_PER_FLOAT);
         bbVertices.order(ByteOrder.nativeOrder());
