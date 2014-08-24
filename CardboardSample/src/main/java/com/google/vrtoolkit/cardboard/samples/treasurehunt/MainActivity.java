@@ -48,6 +48,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private static final String TAG = "MainActivity";
 
     private static final int CUBE_COUNT = 30;
+    private static final int BYTES_PER_FLOAT = 4;
 
     private static final float CAMERA_Z = 0.01f;
     private static final float TIME_DELTA = .3f;
@@ -194,44 +195,44 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         Log.i(TAG, "onSurfaceCreated");
         GLES20.glClearColor(0.1f, 0.1f, 0.1f, 0.5f); // Dark background so text shows up well
 
-        ByteBuffer bbVertices = ByteBuffer.allocateDirect(DATA.CUBE_COORDS.length * 4);
+        ByteBuffer bbVertices = ByteBuffer.allocateDirect(DATA.CUBE_COORDS.length * BYTES_PER_FLOAT);
         bbVertices.order(ByteOrder.nativeOrder());
         mCubeVertices = bbVertices.asFloatBuffer();
         mCubeVertices.put(DATA.CUBE_COORDS);
         mCubeVertices.position(0);
 
-        ByteBuffer bbColors = ByteBuffer.allocateDirect(DATA.CUBE_COLORS.length * 4);
+        ByteBuffer bbColors = ByteBuffer.allocateDirect(DATA.CUBE_COLORS.length * BYTES_PER_FLOAT);
         bbColors.order(ByteOrder.nativeOrder());
         mCubeColors = bbColors.asFloatBuffer();
         mCubeColors.put(DATA.CUBE_COLORS);
         mCubeColors.position(0);
 
-        ByteBuffer bbFoundColors = ByteBuffer.allocateDirect(DATA.CUBE_FOUND_COLORS.length * 4);
+        ByteBuffer bbFoundColors = ByteBuffer.allocateDirect(DATA.CUBE_FOUND_COLORS.length * BYTES_PER_FLOAT);
         bbFoundColors.order(ByteOrder.nativeOrder());
         mCubeFoundColors = bbFoundColors.asFloatBuffer();
         mCubeFoundColors.put(DATA.CUBE_FOUND_COLORS);
         mCubeFoundColors.position(0);
 
-        ByteBuffer bbNormals = ByteBuffer.allocateDirect(DATA.CUBE_NORMALS.length * 4);
+        ByteBuffer bbNormals = ByteBuffer.allocateDirect(DATA.CUBE_NORMALS.length * BYTES_PER_FLOAT);
         bbNormals.order(ByteOrder.nativeOrder());
         mCubeNormals = bbNormals.asFloatBuffer();
         mCubeNormals.put(DATA.CUBE_NORMALS);
         mCubeNormals.position(0);
 
         // make a floor
-        ByteBuffer bbFloorVertices = ByteBuffer.allocateDirect(DATA.FLOOR_COORDS.length * 4);
+        ByteBuffer bbFloorVertices = ByteBuffer.allocateDirect(DATA.FLOOR_COORDS.length * BYTES_PER_FLOAT);
         bbFloorVertices.order(ByteOrder.nativeOrder());
         mFloorVertices = bbFloorVertices.asFloatBuffer();
         mFloorVertices.put(DATA.FLOOR_COORDS);
         mFloorVertices.position(0);
 
-        ByteBuffer bbFloorNormals = ByteBuffer.allocateDirect(DATA.FLOOR_NORMALS.length * 4);
+        ByteBuffer bbFloorNormals = ByteBuffer.allocateDirect(DATA.FLOOR_NORMALS.length * BYTES_PER_FLOAT);
         bbFloorNormals.order(ByteOrder.nativeOrder());
         mFloorNormals = bbFloorNormals.asFloatBuffer();
         mFloorNormals.put(DATA.FLOOR_NORMALS);
         mFloorNormals.position(0);
 
-        ByteBuffer bbFloorColors = ByteBuffer.allocateDirect(DATA.FLOOR_COLORS.length * 4);
+        ByteBuffer bbFloorColors = ByteBuffer.allocateDirect(DATA.FLOOR_COLORS.length * BYTES_PER_FLOAT);
         bbFloorColors.order(ByteOrder.nativeOrder());
         mFloorColors = bbFloorColors.asFloatBuffer();
         mFloorColors.put(DATA.FLOOR_COLORS);
@@ -447,7 +448,6 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
     /**
      * Find a new random position for the object.
-     * We'll rotate it around the Y-axis so it's out of sight, and then up or down by a little bit.
      */
     private void hideObject(int cube) {
         float[] rotationMatrix = new float[16];
@@ -458,7 +458,6 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
 //        float angleXZ = (float) Math.random() * 180 + 90;
         float angleXZ = (float) Math.random() * 40 - 20;
-//        angleXZ += Math.signum(angleXZ) * 10;
 
         Matrix.setRotateM(rotationMatrix, 0, angleXZ, 0f, 1f, 0f);
         float oldObjectDistance = mObjectDistances[cube];
@@ -467,8 +466,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         Matrix.scaleM(rotationMatrix, 0, objectScalingFactor, objectScalingFactor, objectScalingFactor);
         Matrix.multiplyMV(posVec, 0, rotationMatrix, 0, mModelCubes[cube], 12);
 
-        // Now get the up or down angle, between -20 and 20 degrees
-        float angleY = (float) Math.random() * 40 - 20;
+        float angleY = (float) Math.random() * 40 - 40;
         angleY = (float) Math.toRadians(angleY);
         float newY = (float) Math.tan(angleY) * mObjectDistances[cube];
 
