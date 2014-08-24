@@ -97,6 +97,9 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private Vibrator mVibrator;
 
     private CardboardOverlayView mOverlayView;
+    private long before = System.currentTimeMillis();
+    private int fpsCount;
+    private long fps;
 
     /**
      * Converts a raw text file, saved as a resource, into an OpenGL ES shader
@@ -310,6 +313,20 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         headTransform.getHeadView(mHeadView, 0);
 
         checkGLError("onReadyToDraw");
+
+        if (++fpsCount == 10) {
+            fpsCount = 0;
+            long now = System.currentTimeMillis();
+            fps = (long) (1000f / (float)(now - before + 1) * 10f);
+            before = now;
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mOverlayView.show3DToast(fps + " FPS");
+                }
+            });
+//            Log.i(TAG, "FPS = " + fps);
+        }
     }
 
     /**
