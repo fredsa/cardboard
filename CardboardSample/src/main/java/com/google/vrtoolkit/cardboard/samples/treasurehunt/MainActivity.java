@@ -92,7 +92,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private float[] mModelFloor;
 
     private int mScore = 0;
-    private float mObjectDistance = 12f;
+    private float[] mObjectDistances;
     private float mFloorDepth = 20f;
 
     private Vibrator mVibrator;
@@ -159,6 +159,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         setCardboardView(cardboardView);
 
         mModelCubes = new float[CUBE_COUNT][16];
+        mObjectDistances = new float[CUBE_COUNT];
         mCamera = new float[16];
         mView = new float[16];
         mModelViewProjection = new float[16];
@@ -246,14 +247,15 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 
-        for (int cube = 0; cube < mModelCubes.length; cube++) {
-            // Object first appears directly in front of user
-            Matrix.setIdentityM(mModelCubes[cube], 0);
-            Matrix.translateM(mModelCubes[cube], 0, 3f * cube, 0, -mObjectDistance);
-        }
-
         Matrix.setIdentityM(mModelFloor, 0);
         Matrix.translateM(mModelFloor, 0, 0, -mFloorDepth, 0); // Floor appears below user
+
+        for (int cube = 0; cube < mModelCubes.length; cube++) {
+            mObjectDistances[cube] = 16f;
+            Matrix.setIdentityM(mModelCubes[cube], 0);
+            Matrix.translateM(mModelCubes[cube], 0, 0, 0, -mObjectDistances[cube]);
+            hideObject(cube);
+        }
 
         checkGLError("onSurfaceCreated");
     }
@@ -455,21 +457,20 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         // the object's distance from the user.
 
 //        float angleXZ = (float) Math.random() * 180 + 90;
-        float angleXZ = (float) Math.random() * 10 - 5;
-        angleXZ += Math.signum(angleXZ) * 5;
-        Log.i(TAG, "angleXZ " + angleXZ);
+        float angleXZ = (float) Math.random() * 40 - 20;
+//        angleXZ += Math.signum(angleXZ) * 10;
 
         Matrix.setRotateM(rotationMatrix, 0, angleXZ, 0f, 1f, 0f);
-        float oldObjectDistance = mObjectDistance;
-        mObjectDistance = (float) Math.random() * 15 + 5;
-        float objectScalingFactor = mObjectDistance / oldObjectDistance;
+        float oldObjectDistance = mObjectDistances[cube];
+        mObjectDistances[cube] = (float) Math.random() * 10 + 10;
+        float objectScalingFactor = mObjectDistances[cube] / oldObjectDistance;
         Matrix.scaleM(rotationMatrix, 0, objectScalingFactor, objectScalingFactor, objectScalingFactor);
         Matrix.multiplyMV(posVec, 0, rotationMatrix, 0, mModelCubes[cube], 12);
 
         // Now get the up or down angle, between -20 and 20 degrees
-        float angleY = (float) Math.random() * 80 - 40; // angle in Y plane, between -40 and 40
+        float angleY = (float) Math.random() * 40 - 20;
         angleY = (float) Math.toRadians(angleY);
-        float newY = (float) Math.tan(angleY) * mObjectDistance;
+        float newY = (float) Math.tan(angleY) * mObjectDistances[cube];
 
         Matrix.setIdentityM(mModelCubes[cube], 0);
         Matrix.translateM(mModelCubes[cube], 0, posVec[0], newY, posVec[2]);
